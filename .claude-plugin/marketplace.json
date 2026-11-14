@@ -1,0 +1,12 @@
+{
+  "name": "chgk-skills",
+  "owner": { "name": "harlin" },
+  "metadata": { "description": "Skills for writing, editing and testing «Что? Где? Когда?» questions" },
+  "plugins": [
+    {
+      "name": "chgk-editor",
+      "source": "./plugins/chgk-editor",
+      "description": "Assess, test, improve and brainstorm ЧГК questions"
+    }
+  ]
+}
