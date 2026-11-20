@@ -8,6 +8,7 @@ Claude Code skills for editors and authors of «Что? Где? Когда?» (s
 | `chgk-format` | planned | Formatting: answer, зачёт/незачёт, комментарий, sources, author (draft material in `skills/chgk-format/references/format.md`) |
 | `chgk-test` | planned | Blind testing with separate "team" agents that never see the answer |
 | `chgk-improve` | draft | Work-in-progress question: finds what the question is for, separates blockers from weaknesses, offers 2–4 improvement options with full text, cost and risks |
+| `chgk-candle` | draft | Repeat (свечка) check on gotquestions.online: key queries approved by the author, polite search (1 request/min), verdict on each predecessor |
 | `chgk-ideas` | planned | Source material and angles for new questions, with real sources |
 
 The general standard lives in `plugins/chgk-editor/skills/chgk-assess/references/criteria.md`.
