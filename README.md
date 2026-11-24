@@ -29,3 +29,9 @@ Personal rules take precedence over the general standard.
 ## Never commit unplayed questions
 
 This repository is public. Evals and examples must use only questions that have already been played and published.
+
+## License
+
+Apache License 2.0, see `LICENSE`. Earlier versions were released under GPL-3.0.
+
+Played questions quoted as examples belong to their authors and are not covered by this license; each quote names its author or tournament.
