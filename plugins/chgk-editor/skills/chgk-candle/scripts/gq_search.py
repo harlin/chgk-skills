@@ -21,6 +21,7 @@ Politeness rules (do not loosen them):
 Only the Python standard library is used.
 """
 
+import fcntl
 import hashlib
 import html
 import json
@@ -47,16 +48,22 @@ class Wall(Exception):
 
 
 def wait_for_slot():
+    # The lock spans read, sleep and write, so two tools started at once
+    # cannot both see the same old timestamp and hit the site together.
     os.makedirs(CACHE_ROOT, exist_ok=True)
-    try:
-        last = float(open(STATE_FILE).read().strip())
-    except (OSError, ValueError):
-        last = 0.0
-    delay = last + MIN_INTERVAL - time.time()
-    if delay > 0:
-        print(f"waiting {delay:.0f}s (1 request per minute)", file=sys.stderr, flush=True)
-        time.sleep(delay)
-    with open(STATE_FILE, "w") as f:
+    with open(STATE_FILE, "a+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.seek(0)
+        try:
+            last = float(f.read().strip())
+        except ValueError:
+            last = 0.0
+        delay = last + MIN_INTERVAL - time.time()
+        if delay > 0:
+            print(f"waiting {delay:.0f}s (1 request per minute)", file=sys.stderr, flush=True)
+            time.sleep(delay)
+        f.seek(0)
+        f.truncate()
         f.write(str(time.time()))
 
 
@@ -150,7 +157,10 @@ def main(argv):
         if a == "--full":
             full = True
         elif a == "--page":
-            page = int(next(it))
+            n = next(it, "")
+            if not n.isdigit() or int(n) < 1:
+                sys.exit(f"--page needs a positive number, got {n!r}\n\n{__doc__}")
+            page = int(n)
         else:
             queries.append(a)
     if not queries:
