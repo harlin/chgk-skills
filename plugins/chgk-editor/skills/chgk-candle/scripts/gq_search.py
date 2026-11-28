@@ -11,7 +11,7 @@ id, url, pack title, pack end date, take rate, answer, zachet, text, comment
 
 Politeness rules (do not loosen them):
 - at most one request per MIN_INTERVAL seconds, shared by every chgk-skills
-  tool through ~/.cache/chgk-skills/gq_last_request;
+  tool through ~/.cache/chgk-skills/gq_last_request.sqlite;
 - answers are cached in ~/.cache/chgk-skills/gq_search/, a repeated query
   never goes to the site;
 - an honest User-Agent, no browser imitation, no retries;
@@ -21,12 +21,12 @@ Politeness rules (do not loosen them):
 Only the Python standard library is used.
 """
 
-import fcntl
 import hashlib
 import html
 import json
 import os
 import re
+import sqlite3
 import sys
 import time
 import urllib.error
@@ -38,7 +38,8 @@ QUESTION_URL = "https://gotquestions.online/question/{}"
 MIN_INTERVAL = 60  # seconds between requests to the site
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) chgk-skills-fetcher (personal research, 1 req/min)"
 CACHE_ROOT = os.path.join(os.path.expanduser("~"), ".cache", "chgk-skills")
-STATE_FILE = os.path.join(CACHE_ROOT, "gq_last_request")
+STATE_DB = os.path.join(CACHE_ROOT, "gq_last_request.sqlite")
+LOCK_TIMEOUT = 600  # seconds to wait for other chgk-skills tools to finish their turn
 CACHE_DIR = os.path.join(CACHE_ROOT, "gq_search")
 TRIM = 300
 
@@ -48,23 +49,28 @@ class Wall(Exception):
 
 
 def wait_for_slot():
-    # The lock spans read, sleep and write, so two tools started at once
-    # cannot both see the same old timestamp and hit the site together.
+    # The write transaction spans read, sleep and write, so two tools started
+    # at once cannot both see the same old timestamp and hit the site together.
+    # SQLite does the cross-process locking the same way on every OS, makes
+    # the others wait (up to LOCK_TIMEOUT) and drops the lock if we crash.
     os.makedirs(CACHE_ROOT, exist_ok=True)
-    with open(STATE_FILE, "a+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        f.seek(0)
-        try:
-            last = float(f.read().strip())
-        except ValueError:
-            last = 0.0
+    db = sqlite3.connect(STATE_DB, timeout=LOCK_TIMEOUT, isolation_level=None)
+    try:
+        db.execute("BEGIN IMMEDIATE")
+        db.execute("CREATE TABLE IF NOT EXISTS slot (last REAL NOT NULL)")
+        row = db.execute("SELECT max(last) FROM slot").fetchone()
+        last = row[0] if row and row[0] is not None else 0.0
         delay = last + MIN_INTERVAL - time.time()
         if delay > 0:
             print(f"waiting {delay:.0f}s (1 request per minute)", file=sys.stderr, flush=True)
             time.sleep(delay)
-        f.seek(0)
-        f.truncate()
-        f.write(str(time.time()))
+        db.execute("DELETE FROM slot")
+        db.execute("INSERT INTO slot VALUES (?)", (time.time(),))
+        db.execute("COMMIT")
+    except sqlite3.OperationalError as e:
+        raise Wall(f"could not take the rate-limit lock ({e})")
+    finally:
+        db.close()
 
 
 def fetch(url):
@@ -151,6 +157,10 @@ def compact(q, highlights, full):
 
 
 def main(argv):
+    # Windows consoles default to a legacy code page and cannot print Cyrillic.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     full, page, queries = False, 1, []
     it = iter(argv)
     for a in it:
