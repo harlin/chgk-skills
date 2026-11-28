@@ -11,8 +11,9 @@ Claude Code skills for editors and authors of «Что? Где? Когда?» (s
 | `chgk-candle` | draft | Repeat (свечка) check on gotquestions.online: key queries approved by the author, polite search (1 request/min), verdict on each predecessor |
 | `chgk-ideas` | planned | Source material and angles for new questions, with real sources |
 
-The general standard lives in `plugins/chgk-editor/skills/chgk-assess/references/criteria.md`.
-Personal editorial principles can override it (see "Personal principles" below).
+The skills work out of the box with the public principles in `plugins/chgk-editor/skills/chgk-assess/references/principles.md` (codes О1–О8, Ж1–Ж9, П1–П4, А1–А4).
+The general standard behind them, with details and sources, is in `references/criteria.md` next to it.
+Personal editorial principles can override them (see "Personal principles" below).
 
 ## Install
 
@@ -23,8 +24,9 @@ Personal editorial principles can override it (see "Personal principles" below).
 
 ## Personal principles
 
-`chgk-assess` loads a skill named `chgk-principles` if one is installed, or a file at `$CHGK_PRINCIPLES`.
-Personal rules take precedence over the general standard.
+`chgk-assess` and `chgk-improve` also load a skill named `chgk-principles` if one is installed, or a file at `$CHGK_PRINCIPLES`.
+A personal principle with the same code replaces the public one; codes missing from the personal file come from the public `principles.md`.
+You can add your own codes or sections (for example, minor weaknesses that lower the category slightly).
 
 ## Never commit unplayed questions
 
